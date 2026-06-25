@@ -1,0 +1,56 @@
+// prisma/schema.prisma
+// Defines the database schema for Folio.
+// Run: npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  firstName    String
+  lastName     String
+  email        String   @unique
+  university   String
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  transactions Transaction[]
+  categories   Category[]
+  groupMembers GroupMember[]
+}
+
+model Category {
+  id           String        @id @default(uuid())
+  name         String
+  isCustom     Boolean       @default(false)
+  userId       String?       // null = system default category
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  amount      Decimal  @db.Decimal(10, 2)
+  type        String   // "income" | "expense"
+  description String
+  date        DateTime
+  isRecurring Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  categoryId String
+  category   Category  @relation(fields: [categoryId], references: [id])
+
+  groupId    String?
+  // group   Group?  @relation(...)  -- add when Group model is built
+}
